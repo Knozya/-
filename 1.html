@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>炸薯条模拟器</title>
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/brython@3.10.3/brython.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f8f9fa;
+            color: #333;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+        }
+        h1 {
+            color: #ff6347;
+        }
+        .container {
+            background-color: #fff;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            padding: 20px;
+            max-width: 600px;
+            width: 90%;
+            text-align: center;
+        }
+        #output {
+            width: 100%;
+            height: 300px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            padding: 10px;
+            font-size: 14px;
+            margin-top: 10px;
+            resize: none;
+            overflow-y: scroll;
+        }
+        #inputField {
+            width: calc(100% - 22px);
+            padding: 10px;
+            margin-top: 10px;
+            font-size: 14px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+        button {
+            background-color: #ff6347;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            font-size: 16px;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+        button:hover {
+            background-color: #ff4500;
+        }
+    </style>
+</head>
+<body onload="brython()">
+    <h1>炸薯条模拟器</h1>
+    <div class="container">
+        <textarea id="output" readonly></textarea>
+        <input type="text" id="inputField" placeholder="请输入">
+        <button id="submitButton">提交</button>
+    </div>
+    <script type="text/python">
+        from browser import document, window, html
+
+        class FryingPan:
+            def __init__(self):
+                self.oil_temp = 0
+                self.fries = []
+
+            def heat_oil(self, temp):
+                self.oil_temp = temp
+                document['output'].value += f"加热到 {temp} 度。\n"
+
+            def add_fries(self, fries):
+                if self.oil_temp >= 180:
+                    self.fries.extend(fries)
+                    document['output'].value += f"往锅里加入 {len(fries)} 根薯条,流口水力.\n"
+                else:
+                    document['output'].value += "油不是很热,加热到180度吧!\n"
+
+            def fry_fries(self, minutes):
+                if not self.fries:
+                    document['output'].value += "锅里没有薯条可以炸诶.\n"
+                    return
+
+                if self.oil_temp < 180:
+                    document['output'].value += "油不够热，不能炸薯条捏!\n"
+                    return
+
+                if minutes < 3:
+                    document['output'].value += "炸薯条的时间不够，炸的不好吃!\n"
+                elif minutes > 5:
+                    document['output'].value += "炸得太久了！薯条都糊力(悲)!\n"
+                else:
+                    document['output'].value += f"炸了 {minutes} 分钟力.\n"
+                    document['output'].value += "薯条炸得金黄酥脆，好赤!\n"
+
+            def remove_fries(self):
+                if not self.fries:
+                    document['output'].value += "锅里没有薯条可以移除了喵.\n"
+                    return
+
+                document['output'].value += f"从锅里捞出了 {len(self.fries)} 根薯条.\n"
+                self.fries = []
+
+        pan = FryingPan()
+        step = 0
+
+        def main():
+            global step
+            document['output'].value = "一起炸薯条吧！\n"
+            document['inputField'].value = ''
+            document['inputField'].placeholder = "要加热到多少度呢?"
+            step = 1
+
+        def process_input(event):
+            global step, pan
+            user_input = document['inputField'].value
+            document['inputField'].value = ''
+            document['output'].value += user_input + '\n'
+            
+            if step == 1:
+                try:
+                    temp = int(user_input)
+                except ValueError:
+                    document['output'].value += "请输入有效的温度数值。\n"
+                    return
+                if temp < 180:
+                    document['output'].value += "油不够热，不能炸薯条捏,加热到180度吧!\n"
+                    continue_heating = window.prompt("要再来一次吗？(y/n): ")
+                    if continue_heating and continue_heating.lower() != 'y':
+                         document['output'].value += "拜拜喵！\n"
+                         return
+                    else:
+                        return
+                elif temp > 180:
+                    document['output'].value += "油太大啦，薯条都糊啦！\n"
+                    continue_heating = window.prompt("要再来一次吗？(y/n): ")
+                    if continue_heating and continue_heating.lower() != 'y':
+                         document['output'].value += "拜拜喵！\n"
+                         return
+                    else:
+                        return
+                pan.heat_oil(temp)
+                document['inputField'].placeholder = "要炸几根薯条捏?"
+                step = 2
+            elif step == 2:
+                try:
+                    num_fries = int(user_input)
+                except ValueError:
+                    document['output'].value += "请输入有效的薯条数量。\n"
+                    return
+                fries = ["fry" + str(i) for i in range(1, num_fries + 1)]
+                pan.add_fries(fries)
+                document['inputField'].placeholder = "要炸几分钟呢? (友情提示:建议三到五分钟！)"
+                step = 3
+            elif step == 3:
+                try:
+                    minutes = int(user_input)
+                except ValueError:
+                    document['output'].value += "请输入有效的炸薯条时间。\n"
+                    return
+                if minutes < 3:
+                    document['output'].value += "炸薯条的时间不够，炸的不好吃!\n"
+                    continue_minutes = window.prompt("要再来一次吗？(y/n): ")
+                    if continue_minutes and continue_minutes.lower() != 'y':
+                         document['output'].value += "拜拜喵！\n"
+                         return
+                    else:
+                        return
+                elif minutes > 5:
+                    document['output'].value += "炸得太久了！薯条都糊力(悲)!\n"
+                    continue_minutes = window.prompt("要再来一次吗？(y/n): ")
+                    if continue_minutes and continue_minutes.lower() != 'y':
+                         document['output'].value += "拜拜喵！\n"
+                         return
+                    else:
+                        return
+                pan.fry_fries(minutes)
+                pan.remove_fries()
+                document['inputField'].placeholder = "还要继续炸薯条吗？(y/n)"
+                step = 4
+            elif step == 4:
+                continue_prompt = user_input
+                if continue_prompt and continue_prompt.lower() != 'y':
+                    document['output'].value += "拜拜喵！\n"
+                    return
+                else:
+                    main()
+
+        document['submitButton'].bind('click', process_input)
+        main()
+    </script>
+</body>
+</html>
